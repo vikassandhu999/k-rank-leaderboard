@@ -1,7 +1,6 @@
 package leaderboard
 
 import (
-	"math"
 	"math/bits"
 	"math/rand"
 )
@@ -50,36 +49,24 @@ type RankList struct {
 	tail     *RankListNode
 	length   uint64
 	maxLevel int
-	rand     *rand.Rand
 }
 
 func (list *RankList) getRandomLevel() int {
-	length := list.length
-	maxLevel := list.maxLevel
-
-	if maxLevel <= 1 {
-		return 1
-	}
-
 	// Use log_2(list.length) * 4 as estimated max level.
-	estimated := bits.Len(uint(length)) * 4
+	estimated := bits.Len(uint(list.length)) * 4
 
-	if estimated > maxLevel {
-		estimated = maxLevel
+	if estimated > MAX_LEVEL {
+		estimated = MAX_LEVEL
 	}
 
-	// prob should be a bit more than 1/2 chance to make level balanced.
-	// This value is selected by some random Get tests on a random generated list.
-	// The magic number 3/8 works best when list size < 10,000,000.
-	const prob = math.MaxInt32 * 3 / 8
-
-	for i := 1; i < estimated; i++ {
-		if list.rand.Int31() < prob {
-			return i
-		}
+	var level = 1
+	for level < MAX_LEVEL && (rand.Uint64()%4 == 0) {
+		level++
 	}
-
-	return maxLevel - 1
+	if level > MAX_LEVEL {
+		return MAX_LEVEL
+	}
+	return level
 }
 
 func (list *RankList) findLessThanEqual(
@@ -128,7 +115,7 @@ func (list *RankList) Insert(id string, score float64) *RankListNode {
 		list.maxLevel = level
 	}
 
-	for i := 0; i < list.maxLevel; i++ {
+	for i := 0; i < level; i++ {
 		node.levels[i].next = pathNodes[i].levels[i].next
 		pathNodes[i].levels[i].next = node
 
