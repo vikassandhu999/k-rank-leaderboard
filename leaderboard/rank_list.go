@@ -7,6 +7,7 @@ import (
 
 const (
 	MAX_LEVEL = 16
+	NULL_ID   = "NULL_ID"
 )
 
 type listLevel struct {
@@ -54,13 +55,13 @@ type RankList struct {
 func (list *RankList) getRandomLevel() int {
 	// Use log_2(list.length) * 4 as estimated max level.
 	estimated := bits.Len(uint(list.length)) * 4
-
+	// Increase level with probability 1 in kBranching
+	var kBranching uint64 = 4
 	if estimated > MAX_LEVEL {
 		estimated = MAX_LEVEL
 	}
-
-	var level = 1
-	for level < MAX_LEVEL && (rand.Uint64()%4 == 0) {
+	var level int = 1
+	for level < MAX_LEVEL && (rand.Uint64()%kBranching == 0) {
 		level++
 	}
 	if level > MAX_LEVEL {
@@ -69,6 +70,7 @@ func (list *RankList) getRandomLevel() int {
 	return level
 }
 
+/* utility function used by Insert */
 func (list *RankList) findLessThanEqual(
 	id string,
 	score float64,
@@ -84,7 +86,7 @@ func (list *RankList) findLessThanEqual(
 		}
 		for notNil(x.Next(i)) &&
 			(scoreLessThan(x.Next(i), score) ||
-				(scoreEqualTo(x.Next(i), score) && x.Next(i).id < id)) {
+				(scoreEqualTo(x.Next(i), score) && x.Next(i).id <= id)) {
 			ranks[i] += x.Span(i)
 			x = x.Next(i)
 		}
@@ -143,13 +145,58 @@ func (list *RankList) Insert(id string, score float64) *RankListNode {
 	return node
 }
 
+/* utility function used by Delete */
+func (list *RankList) findLessThan(id string, score float64, pathNodes []*RankListNode) *RankListNode {
+	x := list.head
+	for i := list.maxLevel - 1; i >= 0; i-- {
+		for notNil(x.Next(i)) &&
+			(scoreLessThan(x.Next(i), score) ||
+				(scoreEqualTo(x.Next(i), score) && x.Next(i).id < id)) {
+			x = x.Next(i)
+		}
+		pathNodes[i] = x
+	}
+	return x
+}
+
+func (list *RankList) Delete(id string, score float64) bool {
+	pathNodes := make([]*RankListNode, MAX_LEVEL)
+	x := list.findLessThan(id, score, pathNodes)
+	if x == nil || !scoreEqualTo(x.Next(0), score) || x.Next(0).id != id {
+		return false
+	}
+
+	x = x.Next(0)
+	for i := 0; i < list.maxLevel; i++ {
+		if pathNodes[i].Next(i) == x {
+			pathNodes[i].levels[i].next = x.levels[i].next
+			pathNodes[i].levels[i].span += x.levels[i].span - 1
+		} else {
+			pathNodes[i].levels[i].span--
+		}
+	}
+
+	if notNil(x.Next(0)) {
+		x.Next(0).prev = x.prev
+	} else {
+		list.tail = x.prev
+	}
+
+	for list.maxLevel > 1 && list.head.Next(list.maxLevel-1) == nil {
+		list.maxLevel--
+	}
+	list.length--
+	return true
+}
+
+/* return 1-based rank due to extera head node */
 func (list *RankList) GetRank(id string, score float64) uint64 {
 	x := list.head
 	var traversed uint64 = 0
 	for i := list.maxLevel - 1; i >= 0; i-- {
 		for notNil(x.Next(i)) &&
 			(scoreLessThan(x.Next(i), score) ||
-				(scoreEqualTo(x.Next(i), score) && x.Next(i).id < id)) {
+				(scoreEqualTo(x.Next(i), score) && x.Next(i).id <= id)) {
 			traversed += x.Span(i)
 			x = x.Next(i)
 		}
@@ -157,7 +204,26 @@ func (list *RankList) GetRank(id string, score float64) uint64 {
 			return traversed
 		}
 	}
-	return traversed
+	return 0
+}
+
+/* need 1-based rank if 0 provided returns default id */
+func (list *RankList) GetIdByRank(rank uint64) string {
+	if rank > list.length {
+		return NULL_ID
+	}
+	x := list.head
+	var traversed uint64 = 0
+	for i := list.maxLevel - 1; i >= 0; i-- {
+		for notNil(x.Next(i)) && ((traversed + x.Span(i)) <= (rank)) {
+			traversed += x.Span(i)
+			x = x.Next(i)
+		}
+		if traversed == rank {
+			return x.id
+		}
+	}
+	return NULL_ID
 }
 
 func scoreLessThan(x *RankListNode, score float64) bool {
@@ -172,11 +238,12 @@ func notNil(node *RankListNode) bool {
 	return node != nil
 }
 
+/* Constructor for RankList */
 func MakeRankList() *RankList {
 	list := &RankList{}
 	list.length = 0
 	list.maxLevel = 1
-	list.head = makeNode("_", 0, MAX_LEVEL)
+	list.head = makeNode(NULL_ID, 0, MAX_LEVEL)
 	for i := 0; i < MAX_LEVEL; i++ {
 		list.head.levels[i].span = 0
 		list.head.levels[i].next = nil

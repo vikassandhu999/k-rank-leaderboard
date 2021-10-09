@@ -8,10 +8,10 @@ import (
 
 func TestRankListDefined(t *testing.T) {
 	rankList := MakeRankList()
-	assert.NotNil(t, rankList, "Rank list is nil")
+	assert.NotNil(t, rankList)
 }
 
-func TestShouldInsertItem(t *testing.T) {
+func TestInsert(t *testing.T) {
 	type Test struct {
 		id    string
 		score float64
@@ -33,7 +33,7 @@ func TestShouldInsertItem(t *testing.T) {
 	}
 }
 
-func TestShouldReturnCorrectRank(t *testing.T) {
+func TestGetRank(t *testing.T) {
 	type Test struct {
 		id            string
 		score         float64
@@ -41,12 +41,12 @@ func TestShouldReturnCorrectRank(t *testing.T) {
 	}
 	rankList := MakeRankList()
 	entries := make([]Test, 6)
-	entries[0] = Test{"1", 100, 0}
-	entries[1] = Test{"2", 101, 1}
-	entries[2] = Test{"3", 110, 4}
-	entries[3] = Test{"4", 116, 5}
-	entries[4] = Test{"5", 108, 3}
-	entries[5] = Test{"6", 104, 2}
+	entries[0] = Test{"1", 100, 1}
+	entries[1] = Test{"2", 101, 2}
+	entries[2] = Test{"3", 110, 5}
+	entries[3] = Test{"4", 116, 6}
+	entries[4] = Test{"5", 108, 4}
+	entries[5] = Test{"6", 104, 3}
 
 	for _, e := range entries {
 		rankList.Insert(e.id, e.score)
@@ -55,4 +55,71 @@ func TestShouldReturnCorrectRank(t *testing.T) {
 		r := rankList.GetRank(e.id, e.score)
 		assert.Equal(t, r, e.expected_rank)
 	}
+}
+
+func TestShouldGetRankById(t *testing.T) {
+	type Data struct {
+		id    string
+		score float64
+	}
+	rankList := MakeRankList()
+	entries := make([]Data, 6)
+	entries[0] = Data{"1", 100}
+	entries[1] = Data{"2", 101}
+	entries[2] = Data{"3", 110}
+	entries[3] = Data{"4", 116}
+	entries[4] = Data{"5", 108}
+	entries[5] = Data{"6", 104}
+
+	for _, e := range entries {
+		rankList.Insert(e.id, e.score)
+	}
+
+	type Test struct {
+		rank        uint64
+		expected_id string
+	}
+	tests := make([]Test, 6)
+	tests[0] = Test{1, "1"}
+	tests[1] = Test{2, "2"}
+	tests[2] = Test{3, "6"}
+	tests[3] = Test{4, "5"}
+	tests[4] = Test{5, "3"}
+	tests[5] = Test{6, "4"}
+
+	for _, e := range tests {
+		r := rankList.GetIdByRank(e.rank)
+		assert.Equal(t, r, e.expected_id)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	type Data struct {
+		id    string
+		score float64
+	}
+	rankList := MakeRankList()
+	entries := make([]Data, 6)
+	entries[0] = Data{"1", 100}
+	entries[1] = Data{"2", 101}
+	entries[2] = Data{"3", 110}
+	entries[3] = Data{"4", 116}
+	entries[4] = Data{"5", 108}
+	entries[5] = Data{"6", 104}
+
+	for _, e := range entries {
+		rankList.Insert(e.id, e.score)
+	}
+
+	assert.Equal(t, rankList.Delete("1", 100), true)
+	assert.Equal(t, rankList.Delete("1000", 100), false)
+	assert.Equal(t, rankList.Delete("5", 5454), false)
+
+	assert.Equal(t, rankList.GetRank("1", 1000), uint64(0))
+	assert.Equal(t, rankList.length, uint64(5))
+
+	assert.Equal(t, rankList.Delete("2", 101), true)
+
+	assert.Equal(t, rankList.GetRank("2", 101), uint64(0))
+	assert.Equal(t, rankList.length, uint64(4))
 }
