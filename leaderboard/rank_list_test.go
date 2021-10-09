@@ -123,3 +123,30 @@ func TestDelete(t *testing.T) {
 	assert.Equal(t, rankList.GetRank("2", 101), uint64(0))
 	assert.Equal(t, rankList.length, uint64(4))
 }
+
+func TestUpdateScore(t *testing.T) {
+	type Data struct {
+		id    string
+		score float64
+	}
+	rankList := MakeRankList()
+	entries := make([]Data, 6)
+	entries[0] = Data{"1", 100}
+	entries[1] = Data{"2", 101}
+	entries[2] = Data{"3", 110}
+	entries[3] = Data{"4", 116}
+	entries[4] = Data{"5", 108}
+	entries[5] = Data{"6", 104}
+
+	for _, e := range entries {
+		rankList.Insert(e.id, e.score)
+	}
+
+	assert.NotNil(t, rankList.UpdateScore("1", 100, 1666))
+	assert.NotNil(t, rankList.UpdateScore("4", 116, 99))
+
+	assert.Equal(t, uint64(6), rankList.GetRank("1", 1666))
+	assert.Equal(t, uint64(1), rankList.GetRank("4", 99))
+	assert.Equal(t, uint64(5), rankList.GetRank("3", 110))
+
+}

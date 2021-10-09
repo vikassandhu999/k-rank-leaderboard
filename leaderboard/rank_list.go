@@ -145,7 +145,7 @@ func (list *RankList) Insert(id string, score float64) *RankListNode {
 	return node
 }
 
-/* utility function used by Delete */
+/* utility function used by Delete, UpdateScore */
 func (list *RankList) findLessThan(id string, score float64, pathNodes []*RankListNode) *RankListNode {
 	x := list.head
 	for i := list.maxLevel - 1; i >= 0; i-- {
@@ -159,14 +159,8 @@ func (list *RankList) findLessThan(id string, score float64, pathNodes []*RankLi
 	return x
 }
 
-func (list *RankList) Delete(id string, score float64) bool {
-	pathNodes := make([]*RankListNode, MAX_LEVEL)
-	x := list.findLessThan(id, score, pathNodes)
-	if x == nil || !scoreEqualTo(x.Next(0), score) || x.Next(0).id != id {
-		return false
-	}
-
-	x = x.Next(0)
+/* utility function used by Delete, UpdateScore */
+func (list *RankList) deleteNode(x *RankListNode, pathNodes []*RankListNode) {
 	for i := 0; i < list.maxLevel; i++ {
 		if pathNodes[i].Next(i) == x {
 			pathNodes[i].levels[i].next = x.levels[i].next
@@ -186,6 +180,32 @@ func (list *RankList) Delete(id string, score float64) bool {
 		list.maxLevel--
 	}
 	list.length--
+}
+
+func (list *RankList) UpdateScore(id string, score float64, updatedScore float64) *RankListNode {
+	pathNodes := make([]*RankListNode, MAX_LEVEL)
+	x := list.findLessThan(id, score, pathNodes)
+	if x == nil || !scoreEqualTo(x.Next(0), score) || x.Next(0).id != id {
+		return nil
+	}
+	x = x.Next(0)
+	if (x.prev == nil || x.prev.score < updatedScore) && (x.Next(0) == nil || x.Next(0).score > updatedScore) {
+		x.score = updatedScore
+		return x
+	}
+	list.deleteNode(x, pathNodes)
+	return list.Insert(id, updatedScore)
+}
+
+func (list *RankList) Delete(id string, score float64) bool {
+	pathNodes := make([]*RankListNode, MAX_LEVEL)
+	x := list.findLessThan(id, score, pathNodes)
+	if x == nil || !scoreEqualTo(x.Next(0), score) || x.Next(0).id != id {
+		return false
+	}
+
+	x = x.Next(0)
+	list.deleteNode(x, pathNodes)
 	return true
 }
 
