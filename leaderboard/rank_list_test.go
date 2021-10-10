@@ -7,7 +7,7 @@ import (
 )
 
 func TestRankListDefined(t *testing.T) {
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	assert.NotNil(t, rankList)
 }
 
@@ -16,7 +16,7 @@ func TestInsert(t *testing.T) {
 		id    string
 		score float64
 	}
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	entries := make([]Test, 6)
 	entries[0] = Test{"1", 100}
 	entries[1] = Test{"2", 101}
@@ -39,7 +39,7 @@ func TestGetRank(t *testing.T) {
 		score         float64
 		expected_rank uint64
 	}
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	entries := make([]Test, 6)
 	entries[0] = Test{"1", 100, 1}
 	entries[1] = Test{"2", 101, 2}
@@ -57,12 +57,12 @@ func TestGetRank(t *testing.T) {
 	}
 }
 
-func TestShouldGetRankById(t *testing.T) {
+func TestGetRankById(t *testing.T) {
 	type Data struct {
 		id    string
 		score float64
 	}
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	entries := make([]Data, 6)
 	entries[0] = Data{"1", 100}
 	entries[1] = Data{"2", 101}
@@ -98,7 +98,7 @@ func TestDelete(t *testing.T) {
 		id    string
 		score float64
 	}
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	entries := make([]Data, 6)
 	entries[0] = Data{"1", 100}
 	entries[1] = Data{"2", 101}
@@ -129,7 +129,7 @@ func TestUpdateScore(t *testing.T) {
 		id    string
 		score float64
 	}
-	rankList := MakeRankList()
+	rankList := CreateRankList()
 	entries := make([]Data, 6)
 	entries[0] = Data{"1", 100}
 	entries[1] = Data{"2", 101}

@@ -229,13 +229,13 @@ func (list *RankList) GetRank(id string, score float64) uint64 {
 
 /* need 1-based rank if 0 provided returns default id */
 func (list *RankList) GetIdByRank(rank uint64) string {
-	if rank > list.length {
+	if rank > list.length || rank < 1 {
 		return NULL_ID
 	}
 	x := list.head
 	var traversed uint64 = 0
 	for i := list.maxLevel - 1; i >= 0; i-- {
-		for notNil(x.Next(i)) && ((traversed + x.Span(i)) <= (rank)) {
+		for notNil(x.Next(i)) && ((traversed + x.Span(i)) <= rank) {
 			traversed += x.Span(i)
 			x = x.Next(i)
 		}
@@ -259,7 +259,7 @@ func notNil(node *RankListNode) bool {
 }
 
 /* Constructor for RankList */
-func MakeRankList() *RankList {
+func CreateRankList() *RankList {
 	list := &RankList{}
 	list.length = 0
 	list.maxLevel = 1
